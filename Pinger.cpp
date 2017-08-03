@@ -6,7 +6,7 @@ Pinger::Pinger()
 {
     WSADATA data;
     char tips[256]={0};
-    snprintf(tips,sizeof(tips),"wsa init ret %d,errCode:%d.\n",WSAStartup(MAKEWORD(1,1),&data),WSAGetLastError());
+    snprintf(tips,sizeof(tips),"wsa init ret %d,errCode:%d.\n",WSAStartup(MAKEWORD(1,2),&data),WSAGetLastError());
     m_strTips_+=tips;
     m_uiId__=m_uiCnt__++;
 }
@@ -16,7 +16,7 @@ Pinger::~Pinger()
     WSACleanup();
 }
 
-int Pinger::ping(char *dstIP, int packNum, int sndTime, int rcvTime)
+int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, const int& rcvTime)
 {
     int nRet=0;
     m_strTips_+="ping tips.\n";
@@ -33,7 +33,8 @@ int Pinger::ping(char *dstIP, int packNum, int sndTime, int rcvTime)
     int timeout=sndTime;
 
     if(INADDR_NONE ==addr){
-        m_strTips_+=strcat("invalid dstip,",dstIP);
+        m_strTips_+="invalid dstip,";
+        m_strTips_+=dstIP;
         return EnInvalidIp;
     }
 
@@ -59,9 +60,10 @@ int Pinger::ping(char *dstIP, int packNum, int sndTime, int rcvTime)
     dest.sin_addr.s_addr=addr;
     dest.sin_family= AF_INET;
     datasize=DEF_PACKET_SIZE+sizeof(IcmpHead);
-    fillImcpData(icmp_data,datasize);
+    fillIcmpData(icmp_data,datasize);
 
-    for(;packNum>0;packNum--){
+    m_strTips_+="\n";
+    for(int i=packNum;i>0;i--){
         ((IcmpHead*)icmp_data)->ulTimeStamp=GetTickCount();
         ((IcmpHead*)icmp_data)->usSeq=seq_no++;
         ((IcmpHead*)icmp_data)->ususIcmpChkSum=checkSum((WORD*)icmp_data,datasize);
@@ -71,14 +73,15 @@ int Pinger::ping(char *dstIP, int packNum, int sndTime, int rcvTime)
         m_strTips_+=tips;
 
         bread = recvfrom(sockRaw,rcvbuf,sizeof(rcvbuf),0,(struct sockaddr*)&from,&fromlen);
-        snprintf(tips,sizeof(tips),"recv,ret:%d,rcvErrCode:%d.\n",bwrote,WSAGetLastError());
+        snprintf(tips,sizeof(tips),"recv,ret:%d,rcvErrCode:%d.",bread,WSAGetLastError());
         m_strTips_+=tips;
 
         if(bread>0){
             decodeIcmpHead(rcvbuf,bread,&from);
             nRet++;
         }
-        Sleep(10);
+        Sleep(200);
+        m_strTips_+="\n";
     }
 
     if(INVALID_SOCKET != sockRaw){
@@ -90,10 +93,10 @@ int Pinger::ping(char *dstIP, int packNum, int sndTime, int rcvTime)
     return nRet;
 }
 
-unsigned short Pinger::checkSum(WORD *buf, int wordCnt)
+unsigned short Pinger::checkSum(const WORD *buf, const int& wordCnt)
 {
     WORD wChkSum=0;
-    for(;wordCnt>0;wordCnt--){
+    for(int i = wordCnt;i>0;i--){
         wChkSum+=*buf++;
     }
     wChkSum=(wChkSum>>16)+(wChkSum & 0xffff);
@@ -102,7 +105,7 @@ unsigned short Pinger::checkSum(WORD *buf, int wordCnt)
     return (WORD)(~wChkSum);
 }
 
-int Pinger::decodeIcmpHead(char *rcvBuf, unsigned int bread, sockaddr_in *from)
+int Pinger::decodeIcmpHead(char *rcvBuf, const unsigned int bread, const sockaddr_in *from)
 {
     if(NULL == rcvBuf || NULL == from){
         m_strTips_+="decode imcp head encounter null ptr.\n";
@@ -132,14 +135,14 @@ int Pinger::decodeIcmpHead(char *rcvBuf, unsigned int bread, sockaddr_in *from)
         m_strTips_+=tips;
     }
 
-    snprintf(tips,sizeof(tips),"reply from %s, %u bytes, time:%u ms, seq:%d.\n",inet_ntoa(from->sin_addr),
-            bread-wIpHeadLen,GetTickCount()-icmpHead->ulTimeStamp,icmpHead->usSeq);
+    snprintf(tips,sizeof(tips),"reply from %s, %u bytes, time:%u ms, seq:%d, id:%u.\n",inet_ntoa(from->sin_addr),
+            bread-wIpHeadLen,GetTickCount()-icmpHead->ulTimeStamp,icmpHead->usSeq,icmpHead->usIcmpId);
     m_strTips_+=tips;
 
     return 0;
 }
 
-void Pinger::fillImcpData(char *icmpData, int byteCnt)
+void Pinger::fillIcmpData(char *icmpData, const int &byteCnt)
 {
     if(NULL == icmpData){
         m_strTips_+="fill icmp data encounter null ptr.\n";
@@ -152,7 +155,7 @@ void Pinger::fillImcpData(char *icmpData, int byteCnt)
     icmpHead->ucCode=0;
     icmpHead->ususIcmpChkSum=0;
     icmpHead->usIcmpId=m_uiId__;
-    dataPart=icmpData+sizeof(icmpHead);
+    dataPart=icmpData+sizeof(IcmpHead);
     memset(dataPart,0,byteCnt-sizeof(IcmpHead));
 
 }

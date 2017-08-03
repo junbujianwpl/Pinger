@@ -11,3 +11,6 @@ HEADERS += \
 
 
 LIBS += -lWS2_32
+
+DISTFILES += \
+    README.md

@@ -49,19 +49,19 @@ public:
 
     /**
      * @brief ping          ping指定ip地址
-     * @param dstIP         目的ip
+     * @param dstIP         目的ip，不能包含空格等非法字符
      * @param packNum       一共ping几包
      * @param sndTime       发送超时时间，单位毫秒
      * @param rcvTime       接收超时时间，单位毫秒
      * @return              成功ping通的包数，大于0表示ping通
      */
-    int ping(char* dstIP,int packNum,int sndTime,int rcvTime);
+    int ping(const char* dstIP, const int& packNum, const int &sndTime, const int &rcvTime);
 
     /**
      * @brief getTips       获取提示信息
      * @return              提示信息
      */
-    std::string getTips(){return m_strTips_;}
+    std::string getTips() const {return m_strTips_;}
 
 protected:
 
@@ -71,7 +71,7 @@ protected:
      * @param wordCnt       字个数
      * @return              校验和
      */
-    unsigned short checkSum(WORD *buf,int wordCnt);
+    unsigned short checkSum(const WORD *buf, const int &wordCnt);
 
     /**
      * @brief decodeIcmpHead        解析icmp头
@@ -80,14 +80,14 @@ protected:
      * @param from                  来源ip地址
      * @return                      0表示正常，其他见错误码EnErrCode
      */
-    int decodeIcmpHead(char *rcvBuf,unsigned int bread,sockaddr_in *from);
+    int decodeIcmpHead(char *rcvBuf,const unsigned int bread,const sockaddr_in *from);
 
     /**
      * @brief fillImcpData          填充icmp数据
      * @param icmpData              缓冲区
      * @param byteCnt               缓冲区长度
      */
-    void fillImcpData(char *icmpData, int byteCnt);
+    void fillIcmpData(char *icmpData, const int& byteCnt);
 
     std::string  m_strTips_;                ///<提示信息
 
