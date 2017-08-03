@@ -60,10 +60,11 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
     dest.sin_addr.s_addr=addr;
     dest.sin_family= AF_INET;
     datasize=DEF_PACKET_SIZE+sizeof(IcmpHead);
-    fillIcmpData(icmp_data,datasize);
+
 
     m_strTips_+="\n";
     for(int i=packNum;i>0;i--){
+        fillIcmpData(icmp_data,datasize);
         ((IcmpHead*)icmp_data)->ulTimeStamp=GetTickCount();
         ((IcmpHead*)icmp_data)->usSeq=seq_no++;
         ((IcmpHead*)icmp_data)->ususIcmpChkSum=checkSum((WORD*)icmp_data,datasize);
@@ -80,7 +81,7 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
             decodeIcmpHead(rcvbuf,bread,&from);
             nRet++;
         }
-        Sleep(200);
+        Sleep(20);
         m_strTips_+="\n";
     }
 
