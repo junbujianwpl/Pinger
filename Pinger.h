@@ -94,7 +94,7 @@ protected:
 private:
     enum EnErrCode{
         EnOK,
-        EnNullPtr,
+        EnNullPtr=-100,
         EnBadData,
         EnInvalidIp,
         EnSockErr,
