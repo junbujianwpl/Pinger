@@ -9,10 +9,21 @@ Pinger::Pinger()
     snprintf(tips,sizeof(tips),"wsa init ret %d,errCode:%d.\n",WSAStartup(MAKEWORD(1,2),&data),WSAGetLastError());
     m_strTips_+=tips;
     m_uiId__=m_uiCnt__++;
+    m_sock__=INVALID_SOCKET;
+    m_sock__=socket(AF_INET,SOCK_RAW,IPPROTO_ICMP);
+    if(INVALID_SOCKET == m_sock__){
+        snprintf(tips,sizeof(tips),"create sock failed,errcode:%d\n",WSAGetLastError());
+        m_strTips_+=tips;
+    }
+
 }
 
 Pinger::~Pinger()
 {
+    if(INVALID_SOCKET != m_sock__)
+    {
+        closesocket(m_sock__);
+    }
     WSACleanup();
 }
 
@@ -21,7 +32,7 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
     int nRet=0;
     m_strTips_+="ping tips.\n";
     char tips[256]={0};
-    SOCKET sockRaw=INVALID_SOCKET;
+
     struct sockaddr_in  dest,from;
     unsigned short seq_no=0;
 
@@ -38,21 +49,18 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
         return EnInvalidIp;
     }
 
-    sockRaw=socket(AF_INET,SOCK_RAW,IPPROTO_ICMP);
-    if(INVALID_SOCKET == sockRaw){
-        snprintf(tips,sizeof(tips),"create sock failed,errcode:%d\n",WSAGetLastError());
-        m_strTips_+=tips;
+    if(INVALID_SOCKET == m_sock__){
         return EnSockErr;
     }
 
     //set send time-out val
-    bread = setsockopt(sockRaw,SOL_SOCKET,SO_SNDTIMEO,(char*)&timeout,sizeof(timeout));
+    bread = setsockopt(m_sock__,SOL_SOCKET,SO_SNDTIMEO,(char*)&timeout,sizeof(timeout));
     snprintf(tips,sizeof(tips),"set send time-out %d,ret:%d,errCode:%d.",timeout,bread,WSAGetLastError());
     m_strTips_+=tips;
 
     //set recv time-out val
     timeout=rcvTime;
-    bread = setsockopt(sockRaw,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(timeout));
+    bread = setsockopt(m_sock__,SOL_SOCKET,SO_RCVTIMEO,(char*)&timeout,sizeof(timeout));
     snprintf(tips,sizeof(tips),"set recv time-out %d,ret:%d,errCode:%d.",timeout,bread,WSAGetLastError());
     m_strTips_+=tips;
 
@@ -69,11 +77,11 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
         ((IcmpHead*)icmp_data)->usSeq=seq_no++;
         ((IcmpHead*)icmp_data)->ususIcmpChkSum=checkSum((WORD*)icmp_data,datasize);
 
-        int bwrote = sendto(sockRaw,icmp_data,datasize,0,(struct sockaddr*)&dest,sizeof(dest));
+        int bwrote = sendto(m_sock__,icmp_data,datasize,0,(struct sockaddr*)&dest,sizeof(dest));
         snprintf(tips,sizeof(tips),"send,ret:%d,sndErrCode:%d,",bwrote,WSAGetLastError());
         m_strTips_+=tips;
 
-        bread = recvfrom(sockRaw,rcvbuf,sizeof(rcvbuf),0,(struct sockaddr*)&from,&fromlen);
+        bread = recvfrom(m_sock__,rcvbuf,sizeof(rcvbuf),0,(struct sockaddr*)&from,&fromlen);
         snprintf(tips,sizeof(tips),"recv,ret:%d,rcvErrCode:%d.",bread,WSAGetLastError());
         m_strTips_+=tips;
 
@@ -83,12 +91,6 @@ int Pinger::ping(const char *dstIP, const int& packNum, const int& sndTime, cons
         }
         Sleep(20);
         m_strTips_+="\n";
-    }
-
-    if(INVALID_SOCKET != sockRaw){
-        int clsRet= closesocket(sockRaw);
-        snprintf(tips,sizeof(tips),"close sock:%u,ret:%d,errCode:%d\n",sockRaw,clsRet,WSAGetLastError());
-        m_strTips_+=tips;
     }
 
     return nRet;

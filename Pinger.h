@@ -93,7 +93,7 @@ protected:
 
 private:
     enum EnErrCode{
-        EnOK,
+        EnOK=-100,
         EnNullPtr,
         EnBadData,
         EnInvalidIp,
@@ -103,6 +103,8 @@ private:
     unsigned int m_uiId__;                  ///<当前对象id计数
 
     static unsigned int m_uiCnt__;          ///<总对象创建数计数
+
+    SOCKET m_sock__;                         ///<套按字
 };
 
 #endif // PINGER_H
