@@ -93,8 +93,8 @@ protected:
 
 private:
     enum EnErrCode{
-        EnOK=-100,
-        EnNullPtr,
+        EnOK,
+        EnNullPtr=-100,
         EnBadData,
         EnInvalidIp,
         EnSockErr,
